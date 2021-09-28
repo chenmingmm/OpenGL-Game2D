@@ -1,0 +1,5 @@
+build
+bin
+src/glfw
+ext
+.vscode
