@@ -26,12 +26,7 @@ glm::vec2 BallObject::Move(GLfloat dt, GLuint window_width)
         if (Position.y <= 0.0f)
         {
             this->Velocity.y = -this->Velocity.y;
-            this->Velocity.y = 0.0f;
-        }
-        if (Position.y + this->Size.y >= window_width)
-        {
-            this->Position.y = -this->Position.y;
-            this->Position.y = window_width - this->Size.y;
+            this->Position.y = 0.0f;
         }
     }
     return this->Position;

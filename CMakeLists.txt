@@ -8,8 +8,6 @@ include_directories(./include/)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
 include(glm2)
 
-aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/src DIR_LIST)
-
 set(SRC_LIST glad.c camera.h stb_image.h)
 
 foreach(names ${SRC_LIST})
