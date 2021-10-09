@@ -3,6 +3,7 @@
 #include "resourcemanager.h"
 #include "GameLevel.h"
 #include "BallObject.h"
+#include "ParticalGenerator.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -10,6 +11,7 @@
 
 SpriteRenderer  *Renderer;
 SpriteRendererTest * Renderertest;
+ParticleGenerator *particleGenerator;
 
 // 初始化挡板的大小
 const glm::vec2 PLAYER_SIZE(100, 20);
@@ -60,26 +62,19 @@ void Game::Init()
 {
  // 加载着色器
     ResourceManager::LoadShader("shaders/sprite.vs", "shaders/sprite.frag", nullptr, "sprite");
+    ResourceManager::LoadShader("shaders/particle.vs", "shaders/particle.frag", nullptr, "particle");
     // 配置着色器
     glm::mat4 projection = glm::ortho(0.0f, static_cast<GLfloat>(this->Width), 
         static_cast<GLfloat>(this->Height), 0.0f, -1.0f, 1.0f);
     ResourceManager::GetShader("sprite").Use().SetInteger("image", 0);
     ResourceManager::GetShader("sprite").SetMatrix4("projection", projection);
+    ResourceManager::GetShader("particle").Use().SetInteger("sprite", 0);
+    ResourceManager::GetShader("particle").Use().SetMatrix4("projection", projection);
     // 设置专用于渲染的控制
     Renderer = new SpriteRenderer(ResourceManager::GetShader("sprite"));
-
-     // 加载着色器
-    // ResourceManager::LoadShader("shaders/sprite_test.vs", "shaders/sprite_test.frag", nullptr, "spritetest");
-    // // 配置着色器
-    // projection = glm::ortho(0.0f, static_cast<GLfloat>(this->Width), 
-    //     0.0f,static_cast<GLfloat>(this->Height), -1.0f, 100.0f);
-    // ResourceManager::GetShader("spritetest").Use().SetInteger("image", 0);
-    // ResourceManager::GetShader("spritetest").SetMatrix4("projection", projection);
-    // // 设置专用于渲染的控制
-    // Renderertest = new SpriteRendererTest(ResourceManager::GetShader("spritetest"));
     // 加载纹理
+    ResourceManager::LoadTexture("textures/particle.png", GL_TRUE, "particle"); 
     ResourceManager::LoadTexture("textures/awesomeface.png", GL_TRUE, "face");
-
     ResourceManager::LoadTexture("textures/background.jpg", GL_FALSE, "background");
     ResourceManager::LoadTexture("textures/awesomeface.png", GL_TRUE, "face");
     ResourceManager::LoadTexture("textures/block.png", GL_FALSE, "block");
@@ -102,15 +97,20 @@ void Game::Init()
     Player = new GameObject(playerPos, PLAYER_SIZE, ResourceManager::GetTexture("paddle"));
 
     glm::vec2 ballPos = playerPos + glm::vec2(PLAYER_SIZE.x / 2 - BALL_RADIUS, -BALL_RADIUS * 2);
-    Ball = new BallObject(ballPos, BALL_RADIUS, INITIAL_BALL_VELOCITY,
+    Ball = new BallObject(ballPos, BALL_RADIUS, glm::vec2(0.0f,0.0f),
         ResourceManager::GetTexture("face"));
+
+    particleGenerator = new ParticleGenerator(
+        ResourceManager::GetShader("particle"), 
+        ResourceManager::GetTexture("particle"), 
+        500
+    );
 }
 
 void Game::Render()
 {
    if(this->State == GAME_ACTIVE)
     {
-        //glViewport(0,0,400,600);
         // 绘制背景
         Renderer->DrawSprite(ResourceManager::GetTexture("background"), 
             glm::vec2(0, 0), glm::vec2(this->Width, this->Height), 0.0f
@@ -120,7 +120,7 @@ void Game::Render()
 
         Player->Draw(*Renderer);
 
-        //glViewport(400,0,400,600);
+        particleGenerator->Draw();
 
         Ball->Draw(*Renderer);
     }
@@ -130,7 +130,15 @@ void Game::Update(GLfloat dt)
 {
     Ball->Move(dt, this->Width);
 
+    particleGenerator->Update(dt, *Ball, 2, glm::vec2(Ball->Radius / 2));
+
     this->DoCollision();
+
+    if (Ball->Position.y >= this->Height) // 球是否接触底部边界？
+    {
+        //this->ResetLevel();
+        this->ResetPlayer();
+    }
 }
 
 void Game::ProcessInput(GLfloat dt)
@@ -165,6 +173,7 @@ void Game::ProcessInput(GLfloat dt)
         if (this->Keys[GLFW_KEY_SPACE])
         {
             Ball->Stuck = false;
+            Ball->Velocity = INITIAL_BALL_VELOCITY;
         }
     }
 }
@@ -180,7 +189,7 @@ GLboolean Game::checkCollision(GameObject &one, GameObject &two)
     return collision_x && collision_y;   
 }
 
-GLboolean Game::checkCollision(BallObject &one, GameObject &two)
+CollisionData Game::checkCollision(BallObject &one, GameObject &two)
 {
     // 获取圆的中心 
     glm::vec2 center(one.Position + one.Radius);
@@ -197,7 +206,12 @@ GLboolean Game::checkCollision(BallObject &one, GameObject &two)
     glm::vec2 closest = aabb_center + clamped;
     // 获得圆心center和最近点closest的矢量并判断是否 length <= radius
     difference = closest - center;
-    return glm::length(difference) < one.Radius;
+    //return glm::length(difference) < one.Radius;
+    if (glm::length(difference) < one.Radius) {
+        return CollisionData(GL_TRUE, VectorDirection(difference), difference);
+    } else {
+        return CollisionData(GL_FALSE, UP, glm::vec2(0.0f,0.0f));
+    }
 }
 
 void Game::DoCollision()
@@ -207,13 +221,66 @@ void Game::DoCollision()
         if (iter.Destroyed){
             continue;
         }
-        if (checkCollision(*Ball, iter)){
-
+        CollisionData data = checkCollision(*Ball, iter);
+        if (data.isCollision){
             if (!iter.IsSolid) {
                  iter.Destroyed = true;
-            }          
+            }
+            if (data.dir == LEFT || data.dir == RIGHT) {
+                Ball->Velocity.x = -Ball->Velocity.x;
+                GLfloat penetration = Ball->Radius - glm::abs(data.diff_vector.x);
+                if (data.dir == LEFT) {
+                    Ball->Position.x += penetration;
+                } else {
+                    Ball->Position.y -= penetration;
+                }
+            }
+            else 
+            {
+                Ball->Velocity.y = -Ball->Velocity.y;
+                GLfloat penetration = Ball->Radius - glm::abs(data.diff_vector.y);
+                if (data.dir == UP)
+                {
+                    Ball->Position.y -= penetration;
+                }
+                else
+                {
+                    Ball->Position.y += penetration;
+                }
+            }
         }
     }
+    CollisionData playerdata = checkCollision(*Ball, *Player);
+    if (!Ball->Stuck && playerdata.isCollision) {
+                // 检查碰到了挡板的哪个位置，并根据碰到哪个位置来改变速度
+        GLfloat centerBoard = Player->Position.x + Player->Size.x / 2;
+        GLfloat distance = (Ball->Position.x + Ball->Radius) - centerBoard;
+        GLfloat percentage = distance / (Player->Size.x / 2);
+        // 依据结果移动
+        GLfloat strength = 2.0f;
+        glm::vec2 oldVelocity = Ball->Velocity;
+        Ball->Velocity.x = INITIAL_BALL_VELOCITY.x * percentage * strength; 
+        Ball->Velocity.y = -1 * glm::abs(Ball->Velocity.y);
+        Ball->Velocity = glm::normalize(Ball->Velocity) * glm::length(oldVelocity);
+    }
+}
+
+void Game::ResetLevel()
+{
+    if (this->Level == 0)this->Levels[0].Load("levels/one.lvl", this->Width, this->Height * 0.5f);
+    else if (this->Level == 1)
+        this->Levels[1].Load("levels/two.lvl", this->Width, this->Height * 0.5f);
+    else if (this->Level == 2)
+        this->Levels[2].Load("levels/three.lvl", this->Width, this->Height * 0.5f);
+    else if (this->Level == 3)
+        this->Levels[3].Load("levels/four.lvl", this->Width, this->Height * 0.5f);
+}
+
+void Game::ResetPlayer()
+{
+    Player->Size = PLAYER_SIZE;
+    Player->Position = glm::vec2(this->Width / 2 - PLAYER_SIZE.x / 2, this->Height - PLAYER_SIZE.y);
+    Ball->Reset(Player->Position + glm::vec2(PLAYER_SIZE.x / 2 - BALL_RADIUS, -(BALL_RADIUS * 2)), INITIAL_BALL_VELOCITY);
 }
 
 

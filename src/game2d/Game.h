@@ -17,7 +17,17 @@ enum Direction {
     RIGHT,
     DOWN,
     LEFT
-}; 
+};
+
+struct CollisionData{
+    GLboolean isCollision;
+    Direction dir;
+    glm::vec2 diff_vector;
+
+    CollisionData(GLboolean b, Direction d, glm::vec2 vec2):
+    isCollision(b),dir(d),diff_vector(vec2)
+    {}
+};
 
 class Game
 {
@@ -40,8 +50,10 @@ public:
     void Update(GLfloat dt);
     void Render();
     void DoCollision();
+    void ResetLevel();
+    void ResetPlayer();
     GLboolean checkCollision(GameObject &one, GameObject &two);
-    GLboolean checkCollision(BallObject &ball, GameObject &two);
+    CollisionData checkCollision(BallObject &ball, GameObject &two);
 };
 
 #endif
