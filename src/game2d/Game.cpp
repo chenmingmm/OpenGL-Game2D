@@ -4,6 +4,7 @@
 #include "GameLevel.h"
 #include "BallObject.h"
 #include "ParticalGenerator.h"
+#include "PostProcessor.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -12,6 +13,7 @@
 SpriteRenderer  *Renderer;
 SpriteRendererTest * Renderertest;
 ParticleGenerator *particleGenerator;
+PostProcessor *Effects;
 
 // 初始化挡板的大小
 const glm::vec2 PLAYER_SIZE(100, 20);
@@ -22,6 +24,8 @@ const GLfloat PLAYER_VELOCITY(500.0f);
 const glm::vec2 INITIAL_BALL_VELOCITY(100.0f, -350.0f);
 // 球的半径
 const GLfloat BALL_RADIUS = 12.5f;
+
+GLfloat ShakeTime = 0.0f;
 
 BallObject     *Ball;
 
@@ -63,6 +67,7 @@ void Game::Init()
  // 加载着色器
     ResourceManager::LoadShader("shaders/sprite.vs", "shaders/sprite.frag", nullptr, "sprite");
     ResourceManager::LoadShader("shaders/particle.vs", "shaders/particle.frag", nullptr, "particle");
+    ResourceManager::LoadShader("shaders/postprocessor.vs", "shaders/postprocessor.frag", nullptr, "Effects");
     // 配置着色器
     glm::mat4 projection = glm::ortho(0.0f, static_cast<GLfloat>(this->Width), 
         static_cast<GLfloat>(this->Height), 0.0f, -1.0f, 1.0f);
@@ -105,12 +110,15 @@ void Game::Init()
         ResourceManager::GetTexture("particle"), 
         500
     );
+
+    Effects = new PostProcessor(ResourceManager::GetShader("Effects"), Width, Height);
 }
 
 void Game::Render()
 {
    if(this->State == GAME_ACTIVE)
     {
+        Effects->BeginRender();
         // 绘制背景
         Renderer->DrawSprite(ResourceManager::GetTexture("background"), 
             glm::vec2(0, 0), glm::vec2(this->Width, this->Height), 0.0f
@@ -123,6 +131,9 @@ void Game::Render()
         particleGenerator->Draw();
 
         Ball->Draw(*Renderer);
+
+        Effects->EndRender();
+        Effects->Render(glfwGetTime());
     }
 }
 
@@ -138,6 +149,13 @@ void Game::Update(GLfloat dt)
     {
         //this->ResetLevel();
         this->ResetPlayer();
+    }
+
+    if (ShakeTime > 0.0f) {
+        ShakeTime -= dt;
+        if ( ShakeTime <= 0.0f) {
+            Effects->Shake = false;
+        }
     }
 }
 
@@ -225,6 +243,9 @@ void Game::DoCollision()
         if (data.isCollision){
             if (!iter.IsSolid) {
                  iter.Destroyed = true;
+            } else {
+                Effects->Shake = true;
+                ShakeTime = 0.05f;
             }
             if (data.dir == LEFT || data.dir == RIGHT) {
                 Ball->Velocity.x = -Ball->Velocity.x;
