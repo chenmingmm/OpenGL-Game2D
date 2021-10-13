@@ -11,6 +11,8 @@ class BallObject : public GameObject
 public:
     GLfloat Radius;
     GLboolean Stuck;
+    GLboolean Sticky = GL_FALSE;
+    GLboolean PassThrough = GL_FALSE;
 
     void Reset(glm::vec2 pos, glm::vec2 velocity);
 
@@ -19,7 +21,7 @@ public:
 
     BallObject(/* args */);
     BallObject(glm::vec2 pos, GLfloat radius, glm::vec2 velocity, Texture sprite);
-    ~BallObject() {}
+    virtual ~BallObject() {}
 };
 
 

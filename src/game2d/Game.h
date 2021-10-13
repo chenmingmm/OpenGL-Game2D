@@ -3,8 +3,10 @@
 
 #include <glad/glad.h>
 #include <tuple>
+#include <vector>
 #include "GameLevel.h"
 #include "BallObject.h"
+#include "PowerUp.h"
 
 enum GameState{
     GAME_ACTIVE,
@@ -40,6 +42,7 @@ public:
     std::vector<GameLevel> Levels;
     GLuint                 Level;
     GameObject      *Player;
+    std::vector<PowerUp>  PowerUps;
 
 public:
     Game(GLuint Width, GLuint height);
@@ -52,6 +55,9 @@ public:
     void DoCollision();
     void ResetLevel();
     void ResetPlayer();
+    void SpawnPowerUps(GameObject &block);
+    void UpdatePowerUps(GLfloat dt);
+    void ActivatePowerUp(PowerUp &powerup);
     GLboolean checkCollision(GameObject &one, GameObject &two);
     CollisionData checkCollision(BallObject &ball, GameObject &two);
 };

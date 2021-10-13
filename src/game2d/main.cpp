@@ -58,6 +58,10 @@ int main()
         // Calculate delta time
         GLfloat currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
+        if (deltaTime < 1.0f / 60.0f ) {
+            continue;
+        }
+        
         lastFrame = currentFrame;
         glfwPollEvents();
 
@@ -67,7 +71,6 @@ int main()
 
         // Update Game state
         Breakout.Update(deltaTime);
-
         // Render
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -75,7 +78,6 @@ int main()
 
         glfwSwapBuffers(window);
     }
-
     // Delete all resources as loaded using the resource manager
     ResourceManager::Clear();
 

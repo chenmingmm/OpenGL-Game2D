@@ -110,3 +110,8 @@ void PostProcessor::EndRender()
     glBindFramebuffer(GL_FRAMEBUFFER, 0); // Binds both READ and WRITE framebuffer to default framebuffer
 }
 
+PostProcessor::~PostProcessor()
+{
+    glDeleteVertexArrays(1, &this->VAO);
+}
+
