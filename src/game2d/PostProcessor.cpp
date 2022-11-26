@@ -83,10 +83,8 @@ void PostProcessor::Render(GLfloat time)
 {
     // Set uniforms/options
     this->PostProcessorshader.Use();
-    this->PostProcessorshader.SetFloat("time", time);
-    this->PostProcessorshader.SetInteger("confuse", this->Confuse);
-    this->PostProcessorshader.SetInteger("chaos", this->Chaos);
-    this->PostProcessorshader.SetInteger("shake", this->Shake);
+    this->PostProcessorshader.SetFloat("iTime", time);
+
     // Render textured quad
     glActiveTexture(GL_TEXTURE0);
     this->texture.Bind();	

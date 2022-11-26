@@ -1,5 +1,7 @@
 #include "utils.h"
 
+float lastFrame = 0.0f; // 上一帧的时间s
+
 int main()
 {
     auto window = initGL();

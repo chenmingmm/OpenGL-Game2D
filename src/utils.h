@@ -18,7 +18,6 @@ float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 
 float deltaTime = 0.0f; // 当前帧与上一帧的时间差
-float lastFrame = 0.0f; // 上一帧的时间s
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 {

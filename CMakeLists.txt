@@ -14,7 +14,7 @@ foreach(names ${SRC_LIST})
     list(APPEND filelist ${CMAKE_CURRENT_SOURCE_DIR}/src/${names})
 endforeach(names)
 
-find_library(GLFW3 names glfw3 HINTS ${PROJECT_SOURCE_DIR}/lib/)
+find_library(GLFW3 names glfw3.dll HINTS ${PROJECT_SOURCE_DIR}/lib/)
 
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/)
 #SET(LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
@@ -37,7 +37,7 @@ target_link_libraries(game2d ${GLFW3})
 target_link_libraries(game2d glm::glm)
 
 add_custom_command(TARGET game2d
-COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/shaders $<TARGET_FILE_DIR:game2d>/shaders
+#COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/shaders $<TARGET_FILE_DIR:game2d>/shaders
 COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/textures $<TARGET_FILE_DIR:game2d>/textures
 COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/levels $<TARGET_FILE_DIR:game2d>/levels)
 

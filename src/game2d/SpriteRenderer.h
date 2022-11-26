@@ -20,6 +20,8 @@ public:
         glm::vec2 size = glm::vec2(10, 10), GLfloat rotate = 0.0f, 
         glm::vec3 color = glm::vec3(1.0f));
 
+    void RenderTime(GLfloat dt);
+
 protected:
     Shader shader; 
     GLuint quadVAO;
